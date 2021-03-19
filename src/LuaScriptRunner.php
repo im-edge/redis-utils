@@ -127,8 +127,8 @@ class LuaScriptRunner
                 $this->getScript($name)
             );
 
-            $debug = true;
-            // Debug for errors:
+            $debug = false;
+            // Debug for errors. Superseded by new error context logic:
             if ($debug) {
                 $a = 0;
                 $this->logger->debug(sprintf(
@@ -186,7 +186,34 @@ class LuaScriptRunner
                     return $this->asyncRedisFunc('eval', $params);
                 }
 
-                return reject($e);
+                return reject($this->eventuallyTransformScriptError($e));
             });
+    }
+
+    protected function eventuallyTransformScriptError(Exception $e)
+    {
+        $expression = '/call to f_([a-f0-9]{40})\): @user_script:(\d+): (?:user_script:\d+: )?(.+?)$/';
+        if (preg_match($expression, $e->getMessage(), $match)) {
+            $checksum = $match[1];
+            $line = (int) $match[2];
+            $errorMessage = $match[3];
+            foreach ($this->checkSums as $name => $sum) {
+                if ($sum === $checksum) {
+                    $scriptLines = explode("\n", $this->getScript($name));
+                    $start = max(0, $line - 4);
+                    $end = min(count($scriptLines), $line + 2);
+                    $errorContext = array_slice($scriptLines, $start, $end - $start, true);
+                    $error = sprintf("$name:$line: $errorMessage\n");
+                    foreach ($errorContext as $lineNumber => $lineSource) {
+                        $realLineNumber = $lineNumber + 1;
+                        $error .= "    $realLineNumber: $lineSource\n";
+                    }
+
+                    return new RuntimeException(rtrim($error, "\n"));
+                }
+            }
+        }
+
+        return $e;
     }
 }
