@@ -1,114 +1,60 @@
 <?php
 
-namespace gipfl\RedisUtils;
+namespace IMEdge\RedisUtils;
 
 use InvalidArgumentException;
-use RuntimeException;
-use function explode;
-use function preg_split;
-use function property_exists;
-use function strpos;
-use function substr;
-use function trim;
 
 class RedisInfo
 {
-    /** @var object */
-    protected $info;
-
-    protected function __construct()
+    /**
+     * @param array<string,array<string,string>> $info
+     */
+    public function __construct(public readonly array $info)
     {
     }
 
     /**
-     * @param $name
-     * @return object
+     * @return array<string,string>
      */
-    public function getSection($name)
+    public function getSection(string $name): array
     {
-        if (isset($this->info->$name)) {
-            return $this->info->$name;
+        return $this->info[$name] ?? [];
+    }
+
+    /**
+     * @return array<string,string>
+     */
+    public function requireSection(string $name): array
+    {
+        if (isset($this->info[$name])) {
+            return $this->info[$name];
         }
 
         throw new InvalidArgumentException("There is no '$name' Redis INFO section'");
     }
 
+    public function get(string $sectionName, string $key, ?string $default = null): ?string
+    {
+        return $this->getSection($sectionName)[$key] ?? $default;
+    }
+
     /**
      * @param string $sectionName
-     * @param string $key
-     * @param mixed $default
-     * @return mixed|null
+     * @param string[] $properties
+     * @return array<string,?string>
      */
-    public function get($sectionName, $key, $default = null)
+    public function getSectionProperties(string $sectionName, array $properties): array
     {
-        $section = $this->getSection($sectionName);
-        if (property_exists($section, $key)) {
-            return $section->$key;
-        }
-
-        return $default;
-    }
-
-    /**
-     * @return object
-     */
-    public function getInfo()
-    {
-        return $this->info;
-    }
-
-    /**
-     * @param string $section
-     * @param array $properties
-     * @return object
-     */
-    public function getSectionProperties($sectionName, array $properties)
-    {
-        $result = (object) [];
+        $result = [];
         $section = $this->getSection($sectionName);
         foreach ($properties as $key) {
-            if (property_exists($section, $key)) {
-                $result->$key = $section->$key;
+            if (array_key_exists($key, $section)) {
+                $result[$key] = $section[$key];
             } else {
-                $result->$key = null;
+                $result[$key] = null;
             }
         }
 
         return $result;
-    }
-
-    /**
-     * @param $infoString
-     * @return RedisInfo
-     */
-    public static function parse($infoString)
-    {
-        $info = (object) [];
-        $section = null;
-        $sectionKey = null;
-
-        foreach (preg_split('/\r?\n/', $infoString, -1, PREG_SPLIT_NO_EMPTY) as $line) {
-            if (trim($line) === '') {
-                continue;
-            }
-            if ($line[0] === '#') {
-                if ($section !== null) {
-                    $info->$sectionKey = $section;
-                }
-                $sectionKey = substr($line, 2);
-                $section = (object) [];
-            } else {
-                if (strpos($line, ':') === false) {
-                    throw new RuntimeException('Got invalid Redis INFO line: ' . $line);
-                }
-                list($key, $val) = explode(':', $line, 2);
-                $section->$key = $val;
-            }
-        }
-
-        $self = new static();
-        $self->info = $info;
-
-        return $self;
     }
 }

@@ -1,5 +1,5 @@
 {
-  "name": "gipfl/redis-utils",
+  "name": "imedge/redis-utils",
   "description": "Async Redis LUA script runner and other helpers",
   "type": "library",
   "license": "MIT",
@@ -14,13 +14,18 @@
   },
   "autoload": {
     "psr-4": {
-      "gipfl\\RedisUtils\\": "src"
+      "IMEdge\\RedisUtils\\": "src"
     }
   },
   "require": {
-    "php": ">=5.6",
-    "clue/redis-react": ">=2.4",
-    "gipfl/log": ">=0.1",
+    "php": ">=8.1",
+    "psr/log": ">=1.0",
     "ext-json": "*"
+  },
+  "require-dev": {
+    "amphp/redis": "^2.0",
+    "phpstan/phpstan": "^1.10",
+    "phpunit/phpunit": "^10.3",
+    "squizlabs/php_codesniffer": "^3.7"
   }
 }
