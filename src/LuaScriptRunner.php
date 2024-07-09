@@ -19,7 +19,6 @@ use function preg_replace_callback;
 use function sha1;
 use function sprintf;
 use function str_contains;
-use function strpos;
 
 class LuaScriptRunner
 {
