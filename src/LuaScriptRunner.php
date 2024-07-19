@@ -56,7 +56,7 @@ class LuaScriptRunner
             $filename = "$dir/$name.lua";
             if (file_exists($filename)) {
                 $logFileName = substr($filename, strlen($this->scriptDir) + 1);
-                $this->logger->debug("Loading '$logFileName' for '$name'");
+                // $this->logger->debug("Loading '$logFileName' for '$name'");
                 $content = file_get_contents($filename);
                 if ($content === false) {
                     throw new RuntimeException("Could not load $filename");
